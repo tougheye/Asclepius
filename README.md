@@ -9,11 +9,12 @@ This Master Data Management (MDM) project takes in fragmented, inconsistent phys
 1. [Architecture Overview](#architecture-overview)
 2. [Project Structure](#project-structure)
 3. [Data Layers](#data-layers)
-4. [Notebooks & Components](#notebooks--components)
-5. [Job & Pipeline Orchestration](#job--pipeline-orchestration)
-6. [End Product — Golden Records](#end-product--golden-records)
-7. [Unity Catalog Tables](#unity-catalog-tables)
-8. [How to Run](#how-to-run)
+4. [Key Business Decisions](#key-business-decisions)
+5. [Notebooks & Components](#notebooks--components)
+6. [Job & Pipeline Orchestration](#job--pipeline-orchestration)
+7. [End Product — Golden Records](#end-product--golden-records)
+8. [Unity Catalog Tables](#unity-catalog-tables)
+9. [How to Run](#how-to-run)
 
 ---
 
@@ -165,6 +166,16 @@ Survivorship rules determine which value "wins" when multiple records refer to t
 * Records with zero manual review flags are deduplicated by `golden_NPI` and written as the final **Golden Record table**.
 * Records requiring manual review are written to a separate **Review table**.
 * A **Conversion table** maps `Legacy_System_ID` → `golden_NPI` for cross-referencing legacy systems with the harmonized records.
+
+---
+
+## Key Business Decisions
+
+
+Standardization rules were applied **early in the Silver layer**, as soon as raw Bronze data landed rather than deferring cleanup to the Gold layer. Because every downstream consumer (data quality scoring, fuzzy matching, survivorship rules, golden record creation) operates on already-standardized data, each record is cleaned **once** instead of being re-cleaned at every downstream step. This early-cleanup strategy saves significant further processing down the road: matching logic compares normalized addresses and phones directly, without each stage having to handle formatting variations on its own.
+
+
+The Silver cleanup was deliberately **synchronized**: standardization functions were designed so that different column variables (addresses, street types, directionals, phone formats) are aligned through a single coordinated set of rules. Instead of ad-hoc, per-column handling, all columns flow through the same aligned standardization logic and produce a consistent, uniform cleanup output. This synchronized design avoids redundant passes over the data; saving computation costs across the pipeline.
 
 ---
 
